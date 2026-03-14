@@ -22,9 +22,7 @@ jobs:
   Terraform:
     name: "Terraform Init"
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+  
     environment: production
     steps:
       - name: Checkout Self
@@ -45,9 +43,7 @@ jobs:
   TerraformValidate:
      name: Terraform validate
      runs-on: ubuntu-latest
-     strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+   
      environment: production
      steps:
        - name:  Checkout Self
@@ -67,6 +63,8 @@ jobs:
   TFLint:
      name: Check TfLint
      runs-on: ${{ matrix.os }}
+     needs: TerraformValidate
+     environment: production
      strategy:
        matrix:
          os: [ubuntu-latest]
@@ -84,7 +82,6 @@ jobs:
             tflint_version: v0.52.0
       - name: Show version
         run: tflint --version
-    
       - name: Init TFLint
         run: tflint --init
         env:
