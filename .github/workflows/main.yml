@@ -90,7 +90,7 @@ jobs:
           GITHUB_TOKEN: ${{ env.GitHub_Token }}
   
       - name: Run TFLint
-        run: tflint -f compac
+        run: tflint -f compact
     
  
     
