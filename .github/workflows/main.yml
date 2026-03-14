@@ -1,0 +1,96 @@
+name: Deploy Terraform Resources
+
+on: 
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+env:
+  GitHub_Token: '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'
+
+permissions:
+  actions: write
+  issues: read
+  contents: read
+  pull-requests: read
+  id-token: write
+
+jobs:
+  Terraform:
+    name: "Terraform Init"
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    environment: production
+    steps:
+      - name: Checkout Self
+        uses: actions/checkout@v6.0.2
+        with:
+          repository:  ${{ github.repository }}
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v2.0.3
+        with:
+          terraform_version: latest
+      - name: Terraform fmt
+        id: fmt
+        run: terraform fmt
+      - name: Terraform Init
+        id: init
+        run: terraform init
+        
+  TerraformValidate:
+     name: Terraform validate
+     runs-on: ubuntu-latest
+     strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+     environment: production
+     steps:
+       - name:  Checkout Self
+         uses: actions/checkout@v6.0.2
+         with:
+           repository:  ${{ github.repository }}
+       - name: Install Terraform
+         uses: hashicorp/setup-terraform@v2.0.3
+         with:
+           terraform_version: latest
+       - name: Terraform Init
+         run: terraform init
+       - name: Terraform Validate
+         id: validate
+         run: terraform validate -no-color
+         
+  TFLint:
+     name: Check TfLint
+     runs-on: ${{ matrix.os }}
+     strategy:
+       matrix:
+         os: [ubuntu-latest, windows-latest, macos-latest]
+     steps:
+      - uses: actions/checkout@v4
+        name: Checkout source code
+      - uses: actions/cache@v4
+        name: Cache plugin dir
+        with:
+          path: ~/.tflint.d/plugins
+          key: ${{ matrix.os }}-tflint-${{ hashFiles('.tflint.hcl') }}
+       - uses: terraform-linters/setup-tflint@v4
+         name: Setup TFLint
+         with:
+            tflint_version: v0.52.0
+       - name: Show version
+         run: tflint --version
+    
+       - name: Init TFLint
+         run: tflint --init
+         env:
+            # https://github.com/terraform-linters/tflint/blob/master/docs/user-guide/plugins.md#avoiding-rate-limiting
+            GITHUB_TOKEN: ${{ env.GitHub_Token }}
+    
+       - name: Run TFLint
+         run: tflint -f compact
+    
